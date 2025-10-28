@@ -12,3 +12,4 @@ C:\Users\rahma\OneDrive\Desktop\FCAI\Juniors Year\OS\FatFileSystemProject\obj\De
 C:\Users\rahma\OneDrive\Desktop\FCAI\Juniors Year\OS\FatFileSystemProject\obj\Debug\net9.0\FatFileSystemProject.pdb
 C:\Users\rahma\OneDrive\Desktop\FCAI\Juniors Year\OS\FatFileSystemProject\obj\Debug\net9.0\FatFileSystemProject.genruntimeconfig.cache
 C:\Users\rahma\OneDrive\Desktop\FCAI\Juniors Year\OS\FatFileSystemProject\obj\Debug\net9.0\ref\FatFileSystemProject.dll
+C:\Users\rahma\OneDrive\Desktop\FCAI\Juniors Year\OS\FatFileSystemProject\obj\Debug\net9.0\FatFileSystemProject.sourcelink.json
