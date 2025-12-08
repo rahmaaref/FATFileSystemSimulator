@@ -61,6 +61,80 @@ class Program
             string result = Encoding.ASCII.GetString(read, 0, 32);
             Console.WriteLine($"Superblock first 32 bytes after editing: {result}");
 
+            /*================================================TASK 3=====================================================*/
+            Console.WriteLine("=============TASK 3=============");
+            // Create FAT manager
+            FatTableManager fat = new FatTableManager(vd);
+
+            // Load FAT from disk
+            fat.LoadFatFromDisk();
+            Console.WriteLine("FAT loaded from disk.");
+
+            // Allocate a chain of 3 clusters
+            int startCluster = fat.AllocateChain(3);
+
+            if (startCluster == -1)
+            {
+                Console.WriteLine("Not enough free clusters to allocate 3 clusters.");
+            }
+            else
+            {
+                Console.WriteLine($"Allocated chain starting at cluster: {startCluster}");
+
+                // Follow the chain and print it
+                var chain = fat.FollowChain(startCluster);
+                Console.Write("Cluster chain: ");
+                foreach (int c in chain)
+                {
+                    Console.Write(c + " ");
+                }
+                Console.WriteLine();
+            }
+
+            // Free the allocated chain
+            fat.FreeChain(startCluster);
+            Console.WriteLine($"Freed the chain starting at cluster: {startCluster}");
+
+            // Save FAT back to disk
+            fat.FlushFatToDisk();
+            Console.WriteLine("FAT table saved back to disk.");
+
+            Console.WriteLine("=============TASK 4=============");
+            // Use root directory starting cluster defined in constants
+            int rootCluster = FSConstants.ROOT_DIR_FIRST_CLUSTER;
+            DirectoryManager dir = new DirectoryManager(vd, fat);
+
+            Console.WriteLine("Listing directory entries before adding:");
+            List<DirectoryEntry> beforeList = dir.ReadDirectory(rootCluster);
+            foreach (DirectoryEntry e in beforeList)
+            {
+                Console.WriteLine($"  Entry: {e.Name}, Attr: {e.Attribute}, FirstClus: {e.FirstCluster}, Size: {e.FileSize}");
+            }
+
+            // Add a new file entry
+            string newName = "TESTTXT  TXT";   // name must be 11 chars (8.3, padded or uppercase)
+            DirectoryEntry newEntry = new DirectoryEntry(newName, 0, -1, 0);
+            dir.AddEntry(rootCluster, newEntry);
+            Console.WriteLine($"Added entry with name: {newName}");
+
+            Console.WriteLine("Listing directory entries after adding:");
+            List<DirectoryEntry> afterList = dir.ReadDirectory(rootCluster);
+            foreach (DirectoryEntry e in afterList)
+            {
+                Console.WriteLine($"  Entry: {e.Name}, Attr: {e.Attribute}, FirstClus: {e.FirstCluster}, Size: {e.FileSize}");
+            }
+
+            // Remove the entry
+            dir.RemoveEntry(rootCluster, newName);
+            Console.WriteLine($"Removed entry with name: {newName}");
+
+            Console.WriteLine("Listing directory entries after removal:");
+            List<DirectoryEntry> finalList = dir.ReadDirectory(rootCluster);
+            foreach (DirectoryEntry e in finalList)
+            {
+                Console.WriteLine($"  Entry: {e.Name}, Attr: {e.Attribute}, FirstClus: {e.FirstCluster}, Size: {e.FileSize}");
+            }
+
 
             // Close the disk
             vd.CloseDisk();
@@ -69,5 +143,6 @@ class Program
         {
             Console.WriteLine($"Error: {ex.Message}");
         }
+        
     }
 }
