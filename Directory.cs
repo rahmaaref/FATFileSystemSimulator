@@ -1,3 +1,4 @@
+//TASK 4
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -6,36 +7,42 @@ public class DirectoryManager
 {
     private VirtualDisk disk;
     private FatTableManager fat;
-    
+
     //Constructor
-     public DirectoryManager(VirtualDisk vd, FatTableManager ft)
+    public DirectoryManager(VirtualDisk vd, FatTableManager ft)
     {
         disk = vd;
         fat = ft;
     }
 
     // 1) Read all directory entries from folder cluster
+    // Cluster 5:  [Entry1][Entry2][Entry3]...[Entry32]
+    // Cluster 10: [Entry33][Entry34]...[Entry64]
     public List<DirectoryEntry> ReadDirectory(int startCluster)
     {
         List<DirectoryEntry> entries = new List<DirectoryEntry>();
 
-        // Follow cluster chain
+        // Follow cluster chain A directory might be larger than 1024 bytes (1 cluster)
         List<int> chain = fat.FollowChain(startCluster);
 
-        foreach (int clus in chain)
+        foreach (int clus in chain) // Reads each cluster in the chain.
         {
             byte[] data = disk.ReadCluster(clus);
 
+            // Extract entries from cluster 
             // Each entry = 32 bytes
             for (int i = 0; i < 1024; i += 32)
             {
+                // A zero first byte marks an unused slot (same convention
+                // AddEntry looks for and RemoveEntry sets) - skip it so
+                // empty/deleted slots don't show up as blank entries.
+                if (data[i] == 0)
+                    continue;
+
                 byte[] entryBytes = new byte[32];
                 Array.Copy(data, i, entryBytes, 0, 32);
 
-                DirectoryEntry entry = DirectoryEntry.FromBytes(entryBytes);
-
-                if (entry != null)
-                    entries.Add(entry);
+                entries.Add(DirectoryEntry.FromBytes(entryBytes));
             }
         }
 
@@ -51,11 +58,30 @@ public class DirectoryManager
 
         foreach (DirectoryEntry e in entries)
         {
-            if (e.Name.ToUpper() == name.ToUpper())
+            // Compare trimmed forms: stored names come back trimmed from
+            // FromBytes, but Format8Dot3 always returns the full padded
+            // 11-char form - trimming both sides keeps the comparison
+            // consistent regardless of whether there's an extension.
+            if (e.Name.Trim().ToUpper() == name.Trim().ToUpper())
                 return e;
         }
+        throw new FileNotFoundException($"Entry '{name.Trim()}' not found");
 
-        return null;
+    }
+
+    // Same lookup as FindEntry, but returns null instead of throwing.
+    // Use this when the caller wants to check existence with an
+    // `if (entry == null)` instead of a try/catch.
+    public DirectoryEntry? TryFindEntry(int startCluster, string name)
+    {
+        try
+        {
+            return FindEntry(startCluster, name);
+        }
+        catch (FileNotFoundException)
+        {
+            return null;
+        }
     }
 
     // 3) Add new entry
@@ -81,7 +107,7 @@ public class DirectoryManager
             }
         }
 
-        // No empty slot → allocate new cluster
+        // No empty slot â†’ allocate new cluster
         int newClus = fat.AllocateChain(1);
 
         // Update directory chain
@@ -111,10 +137,10 @@ public class DirectoryManager
 
             for (int i = 0; i < 1024; i += 32)
             {
-                // Match name
+                // Match name (trim the padded search key too - see FindEntry)
                 string n = Encoding.ASCII.GetString(data, i, 11).Trim();
 
-                if (n.ToUpper() == name.ToUpper())
+                if (n.ToUpper() == name.Trim().ToUpper())
                 {
                     // Read entry
                     byte[] entryBytes = new byte[32];

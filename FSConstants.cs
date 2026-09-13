@@ -1,4 +1,4 @@
-// FSConstants.cs
+// FSConstants.cs  TASK 2
 public static class FSConstants
 {
     // Size of a cluster in bytes
@@ -11,11 +11,15 @@ public static class FSConstants
     public const int SUPERBLOCK_CLUSTER = 0;
 
     // FAT entries as 4 clusters
+    public const int FAT_ENTRIES = 1024;     // 1024 ints
     public const int FAT_START_CLUSTER = 1;
-    public const int FAT_END_CLUSTER = 4;
+    public const int FAT_End_CLUSTER = 4;
+    public const int ENTRY_SIZE = 4;         // 4 bytes per int
 
     // The begining of the content
     public const int CONTENT_START_CLUSTER = 5;
     public const int ROOT_DIR_FIRST_CLUSTER = 5;
+
+
 
 }
